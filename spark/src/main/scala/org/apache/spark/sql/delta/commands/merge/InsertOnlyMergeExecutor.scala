@@ -193,7 +193,7 @@ trait InsertOnlyMergeExecutor extends MergeOutputGeneration {
       } else {
         expr
       }
-      Column(Alias(exprAfterPassthru, name)())
+      new Column(Alias(exprAfterPassthru, name)())
     }
   }
 
@@ -263,7 +263,7 @@ trait InsertOnlyMergeExecutor extends MergeOutputGeneration {
       seqToString(outputExprs))
 
     outputExprs.zip(outputColNames).map { case (expr, name) =>
-      Column(Alias(expr, name)())
+      new Column(Alias(expr, name)())
     }
   }
 }

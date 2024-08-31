@@ -377,7 +377,7 @@ trait DeltaColumnMappingTestUtilsBase extends SharedSparkSession {
         case a: Attribute =>
           convertColumnNameToAttributeWithPhysicalName(a.name, schema)
       }
-      Column(newExpr)
+      new Column(newExpr)
     }
   }
 

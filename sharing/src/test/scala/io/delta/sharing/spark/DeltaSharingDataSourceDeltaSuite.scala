@@ -16,7 +16,6 @@
 
 package io.delta.sharing.spark
 
-import org.apache.spark.sql.delta.DeltaExcludedBySparkVersionTestMixinShims
 import org.apache.spark.sql.delta.sources.DeltaSQLConf
 import org.apache.spark.sql.delta.test.DeltaSQLCommandTest
 
@@ -38,8 +37,7 @@ trait DeltaSharingDataSourceDeltaSuiteBase
     extends QueryTest
     with DeltaSQLCommandTest
     with DeltaSharingTestSparkUtils
-    with DeltaSharingDataSourceDeltaTestUtils
-    with DeltaExcludedBySparkVersionTestMixinShims {
+    with DeltaSharingDataSourceDeltaTestUtils {
 
   override def beforeEach(): Unit = {
     spark.sessionState.conf.setConfString(
@@ -1464,46 +1462,6 @@ trait DeltaSharingDataSourceDeltaSuiteBase
         withSQLConf(getDeltaSharingClassesSQLConf.toSeq: _*) {
           val profileFile = prepareProfileFile(tempDir)
           testReadTimestampNTZ(s"${profileFile.getCanonicalPath}#share1.default.$sharedTableName")
-        }
-      }
-    }
-  }
-
-  testSparkMasterOnly("basic variant test") {
-    withTempDir { tempDir =>
-      val deltaTableName = "variant_table"
-      withTable(deltaTableName) {
-        spark.range(0, 10)
-          .selectExpr("parse_json(cast(id as string)) v")
-          .write
-          .format("delta")
-          .mode("overwrite")
-          .saveAsTable(deltaTableName)
-
-        val sharedTableName = "shared_table_variant"
-        prepareMockedClientAndFileSystemResult(deltaTableName, sharedTableName)
-        prepareMockedClientGetTableVersion(deltaTableName, sharedTableName)
-
-        val expectedSchemaString = "StructType(StructField(v,VariantType,true))"
-        val expected = spark.read.format("delta").table(deltaTableName)
-
-        def test(tablePath: String): Unit = {
-          assert(
-            expectedSchemaString == spark.read
-              .format("deltaSharing")
-              .option("responseFormat", "delta")
-              .load(tablePath)
-              .schema
-              .toString
-          )
-          val df =
-            spark.read.format("deltaSharing").option("responseFormat", "delta").load(tablePath)
-          checkAnswer(df, expected)
-        }
-
-        withSQLConf(getDeltaSharingClassesSQLConf.toSeq: _*) {
-          val profileFile = prepareProfileFile(tempDir)
-          test(s"${profileFile.getCanonicalPath}#share1.default.$sharedTableName")
         }
       }
     }

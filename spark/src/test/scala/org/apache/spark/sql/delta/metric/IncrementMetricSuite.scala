@@ -51,10 +51,10 @@ abstract class IncrementMetricSuiteBase extends QueryTest with SharedSparkSessio
     val havingIncrement = IncrementMetric(
       GreaterThan(UnresolvedAttribute("s"), Literal(10)), metric)
     val df = testDf
-      .filter(Column(increment))
-      .groupBy(Column(groupByKey).as("gby"))
+      .filter(new Column(increment))
+      .groupBy(new Column(groupByKey).as("gby"))
       .agg(sum("a").as("s"))
-      .filter(Column(havingIncrement))
+      .filter(new Column(havingIncrement))
     val numGroups = df.collect().size
     validatePlan(df.queryExecution.executedPlan)
 
@@ -73,10 +73,10 @@ abstract class IncrementMetricSuiteBase extends QueryTest with SharedSparkSessio
     val ifCondition: Expression = ('a < Literal(20)).expr
     val conditional = If(ifCondition, incrementTrueBranch, incrementFalseBranch)
     val df = testDf
-      .filter(Column(incrementPreFilter))
+      .filter(new Column(incrementPreFilter))
       .filter('a < 25)
-      .filter(Column(increment))
-      .filter(Column(conditional))
+      .filter(new Column(increment))
+      .filter(new Column(conditional))
     val numRows = df.collect().size
     validatePlan(df.queryExecution.executedPlan)
 

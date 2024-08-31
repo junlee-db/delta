@@ -46,8 +46,7 @@ object Unidoc {
     def configureUnidoc(
       docTitle: String = null,
       generatedJavaDoc: Boolean = true,
-      generateScalaDoc: Boolean = false,
-      classPathToSkip: String = null
+      generateScalaDoc: Boolean = false
     ): Project = {
       if (!generatedJavaDoc && !generateScalaDoc) return projectToUpdate
 
@@ -66,7 +65,7 @@ object Unidoc {
               "com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.18" cross CrossVersion.full)
           ),
 
-          generateUnidocSettings(docTitle, generateScalaDoc, classPathToSkip),
+          generateUnidocSettings(docTitle, generateScalaDoc),
 
           // Ensure unidoc is run with tests.
           (Test / test) := ((Test / test) dependsOn (Compile / unidoc)).value
@@ -75,8 +74,7 @@ object Unidoc {
 
     private def generateUnidocSettings(
         customDocTitle: String,
-        generateScalaDoc: Boolean,
-        classPathToSkip : String): Def.SettingsDefinition = {
+        generateScalaDoc: Boolean): Def.SettingsDefinition = {
 
       val internalFilePattern = Seq("/internal/", "/execution/", "$")
 
@@ -156,12 +154,6 @@ object Unidoc {
             sourceFilePatternsToKeep = unidocSourceFilePatterns.value
           )
         },
-
-        ScalaUnidoc / unidoc / fullClasspath := {
-          (ScalaUnidoc / unidoc / fullClasspath).value
-            .filter(f =>
-              classPathToSkip == null || !f.data.getCanonicalPath.contains(classPathToSkip))
-        }
       ) else Nil
 
       javaUnidocSettings ++ scalaUnidocSettings

@@ -18,7 +18,8 @@ package io.delta.sharing.spark
 
 import java.time.LocalDateTime
 
-import org.apache.spark.sql.delta.{DeltaExcludedBySparkVersionTestMixinShims, DeltaIllegalStateException, DeltaLog}
+import org.apache.spark.sql.delta.DeltaIllegalStateException
+import org.apache.spark.sql.delta.DeltaLog
 import org.apache.spark.sql.delta.DeltaOptions.{
   IGNORE_CHANGES_OPTION,
   IGNORE_DELETES_OPTION,
@@ -49,8 +50,7 @@ class DeltaFormatSharingSourceSuite
     extends StreamTest
     with DeltaSQLCommandTest
     with DeltaSharingTestSparkUtils
-    with DeltaSharingDataSourceDeltaTestUtils
-    with DeltaExcludedBySparkVersionTestMixinShims {
+    with DeltaSharingDataSourceDeltaTestUtils {
 
   import testImplicits._
 
@@ -1192,55 +1192,6 @@ class DeltaFormatSharingSourceSuite
               processAllAvailableInStream(0)
             }
           }
-        }
-      }
-    }
-  }
-
-  testSparkMasterOnly("streaming variant query works") {
-    withTempDirs { (inputDir, outputDir, checkpointDir) =>
-      val deltaTableName = "variant_table"
-      withTable(deltaTableName) {
-        sql(s"create table $deltaTableName (v VARIANT) using delta")
-
-        val sharedTableName = "shared_variant_table"
-        prepareMockedClientMetadata(deltaTableName, sharedTableName)
-
-        val profileFile = prepareProfileFile(inputDir)
-        withSQLConf(getDeltaSharingClassesSQLConf.toSeq: _*) {
-          val tablePath = profileFile.getCanonicalPath + s"#share1.default.$sharedTableName"
-
-          sql(s"""insert into table $deltaTableName
-              select parse_json(format_string('{"key": %s}', id))
-              from range(0, 10)
-          """)
-
-          prepareMockedClientAndFileSystemResult(
-            deltaTableName,
-            sharedTableName,
-            versionAsOf = Some(1L)
-          )
-          prepareMockedClientGetTableVersion(deltaTableName, sharedTableName)
-
-          val q = spark.readStream
-              .format("deltaSharing")
-              .option("responseFormat", "delta")
-              .load(tablePath)
-              .writeStream
-              .format("delta")
-              .option("checkpointLocation", checkpointDir.toString)
-              .start(outputDir.toString)
-
-          try {
-            q.processAllAvailable()
-          } finally {
-            q.stop()
-          }
-
-          checkAnswer(
-            spark.read.format("delta").load(outputDir.getCanonicalPath),
-            spark.sql(s"select * from $deltaTableName")
-          )
         }
       }
     }

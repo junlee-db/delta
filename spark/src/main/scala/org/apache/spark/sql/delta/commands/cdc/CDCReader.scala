@@ -163,7 +163,7 @@ object CDCReader extends CDCReaderImpl
         sqlContext.sparkSession,
         readSchemaSnapshot = Some(snapshotForBatchSchema))
 
-      val filter = Column(DeltaSourceUtils.translateFilters(filters))
+      val filter = new Column(DeltaSourceUtils.translateFilters(filters))
       val projections = requiredColumns.map(SchemaUtils.fieldNameToColumn)
       df.filter(filter).select(projections: _*).rdd
     }
